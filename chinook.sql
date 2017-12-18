@@ -139,9 +139,115 @@ from employee;
 -- 4.0 Stored Procedures
 -- 4.1 Basic Stored Procedure
 
+create or replace procedure firstLast_name (some_cursor out sys_refcursor) 
+as
+begin
+    open some_cursor 
+    for select firstname, lastname 
+    from employee;
+end;
+/
 
+declare
+    some_cursor sys_refcursor;
+    firstN employee.firstname % TYPE;
+    lastN employee.lastname % TYPE;
+begin
+    firstLast_name(some_cursor);
+    loop
+        fetch some_cursor into firstN, lastN;
+        exit when some_cursor % NOTFOUND;
+        DBMS_OUTPUT.put_line('First: ' || firstN || ', Last: ' || lastN);
+    end loop;
+    close some_cursor;
+end;
+/
+
+-- 4.2 Stored Procedure Input Parameters
+create or replace procedure updateInfo(email_new varchar2, empid_new number)
+as 
+begin
+    update employee 
+    set email = email_new 
+    where empid_new = employee.employeeid;
+    commit;
+end;
+/
+
+select firstname, lastname, email from employee where employeeid = 5;
+begin
+    updateInfo('some_arbitrary_email@godaddy.com', 5);
+end;
+/
+
+create or replace procedure getEmployeeManager(some_cursor out sys_refcursor, inp_employeeid in number)
+as 
+begin 
+    open some_cursor 
+    for select emp.employeeid, emp.firstname, emp.lastname 
+    from employee e 
+    join employee emp 
+    on e.reportsto = emp.employeeid 
+    where e.employeeid = inp_employeeid; 
+end;
+/
+declare
+    s sys_refcursor;
+    firstN employee.firstname % type;
+    lastN employee.lastname % type;
+    employeeid employee.employeeid % type;
+    inp_employeeid number;
+begin 
+    inp_employeeid := 5;
+    getEmployeeManager(s, inp_employeeid);
+    loop 
+        fetch s into employeeid, firstN, lastN;
+        exit when s % notfound;
+        dbms_output.put_line('id = ' || employeeid || ', first = ' || firstN || ', last = ' || lastN);
+    end loop;
+    close s;
+end;
+/
+
+-- 4.3 Stored Procedure Output Parameters
+create or replace procedure return_eName_Company (inp_custid IN customer.customerid % TYPE, 
+    custfirstN OUT customer.firstname % TYPE, custlastN OUT customer.lastname%TYPE, 
+    custCO OUT customer.company % TYPE) as
+begin
+    select firstname, lastname, company
+    into custfirstN, custLastN, custCO
+    from customer 
+    where customerid = inp_custid;
+end;
+/
+
+declare
+    custFirstN customer.firstname % TYPE;
+    custLastN customer.lastname % TYPE;
+    custCO customer.company % TYPE;
+begin
+    return_eName_Company(4, custFirstN, custLastN, custCO);
+    DBMS_OUTPUT.PUT_LINE('First name: ' || custFirstN || ', Last name: ' || custLastN || 'Company: ' || custCO);
+end;
+/
 -- 5.0 Transactions
 
+create or replace procedure addCustomer(custid in number, firstN in varchar2, lastN in varchar2, email in varchar2)
+as 
+begin
+    insert into customer (customerid, firstname, lastname, email) 
+    values(custid, firstN, lastN, email);
+    commit;
+end;
+/
+
+begin
+addCustomer(117, 'Spartan', 'John', 'Spartan117_John@UNSC.gov');
+end;
+/
+-- select * 
+-- from customer 
+-- where customerid = 117;
 
 -- 6.0 Triggers...After/For
 create or replace trigger triggerEmployee
@@ -213,3 +319,4 @@ select * from ((employee emp inner join customer cust
                                 on p_track.trackid = t.trackid) 
                                 inner join mediatype med on med.mediatypeid = t.mediatypeid) 
                 on iline.trackid = t.trackid;
+
