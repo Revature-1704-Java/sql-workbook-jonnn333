@@ -124,17 +124,31 @@ end;
 
 -- 3.4 User Defined Table Valued Functions
 create or replace function born_after_1968
-return sys_refcursor as some_cursor sys_refcursor;
+return sys_refcursor is some_cursor sys_refcursor;
 
 begin 
-    open some_cursor for select distinct firstname, lastname
+    open some_cursor for select firstname, lastname
                           from employee
-                          where birthdate > '31-DEC-1968';
+                          where birthdate > '30-DEC-1968';
     return some_cursor;
 end;    
 
-select born_after_1968
-from employee;
+declare
+    firstN employee.firstname % type;
+    lastN employee.lastname % type;
+    some_cursor sys_refcursor;
+begin
+    select born_after_1968
+    into some_cursor
+    from dual;
+    
+    loop
+        fetch some_cursor into firstN, lastN;
+        exit when some_cursor % notfound;
+        DBMS.OUTPUT.put_line('First name: ' || firstN || ' Last name: ' || lastN);
+    end loop;
+end;
+/
 
 -- 4.0 Stored Procedures
 -- 4.1 Basic Stored Procedure
@@ -231,6 +245,28 @@ begin
 end;
 /
 -- 5.0 Transactions
+
+/* 5.0 */
+create or replace procedure delete_invoice (inp_invoiceid in invoice.invoiceid % TYPE) 
+as
+begin
+    savepoint LastSave;
+    delete from invoiceline where invoiceid = inp_invoiceid;
+    delete from invoice where invoiceid = inp_invoiceid;
+    commit;
+    
+    exception when others then
+        DBMS_OUTPUT.PUT_LINE('Delete unsuccessful');
+        rollback to LastSave;
+end;
+/
+
+declare
+    random_input invoice.invoiceid % type;
+begin    
+    delete_invoice(random_input);
+end;
+/
 
 create or replace procedure addCustomer(custid in number, firstN in varchar2, lastN in varchar2, email in varchar2)
 as 
