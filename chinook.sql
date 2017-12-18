@@ -145,7 +145,7 @@ begin
     loop
         fetch some_cursor into firstN, lastN;
         exit when some_cursor % notfound;
-        DBMS.OUTPUT.put_line('First name: ' || firstN || ' Last name: ' || lastN);
+        DBMS_OUTPUT.put_line('First name: ' || firstN || ' Last name: ' || lastN);
     end loop;
 end;
 /
